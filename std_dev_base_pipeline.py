@@ -120,6 +120,6 @@ for i in range(-5, 6, 1):
     print("Trained network for {} epochs".format(total_epochs))
     data.test_mask[data.test_mask != True] =  True
     data = data.to(device)
-    test_acc, pred = test()
+    test_acc = test()
     print('Seed Value: {} Test Acc: {:.4f}'.format(seed_val, test_acc))
     print("----------------------------------------------")
