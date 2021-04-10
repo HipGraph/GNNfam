@@ -28,3 +28,16 @@ The length of the array is equalt to number of nodes in the graph. The array con
 Value 1 at index `i` means that node `i` belongs to the training set.
 
 Value 2 at index `i` means that node `i` belongs to the test set.
+
+
+### Instructions to run
+To run use the following command
+```
+python base_pipeline.py --appropriate_args
+```
+
+The default setting can be run by following command
+
+```
+python base_pipeline.py --graph Graph.txt --labels label.txt --mask mask_split.pkl --one_indexed_classes
+```
