@@ -15,7 +15,7 @@ torch.manual_seed(42)
 startpt = []
 endpt = []
 eweights = []
-with open("Graph.txt", "r") as f:
+with open("deepfamgraph.txt", "r") as f:
     ct = 0
     for line in f.readlines():
         a,b,c = line.strip().split()
@@ -28,22 +28,11 @@ print(len(startpt), len(endpt))
 
 labels = []
 
-with open("label.txt", "r") as f:
+with open("deepfamlabel.txt", "r") as f:
     for l in f.readlines():
         labels.append(int(l.strip().split()[1]))
 print("Done reading")
 num_classes = len(set(labels))
-
-
-def convert_to_14_bit(num):
-        return list(map(int, list('{0:014b}'.format(num))))
-
-edges = torch.tensor([startpt, endpt], dtype=torch.long)
-y = torch.tensor(labels)
-y -= 1
-x = [convert_to_14_bit(val) for val in labels]
-data = Data(x=torch.Tensor(x), edge_index=edges, y=y)
-print("Done Prepping data")
 
 nodesize = y.shape[0]
 trainsize = int(0.8*nodesize)
@@ -54,9 +43,9 @@ def convert_to_14_bit(num):
 
 edges = torch.tensor([startpt, endpt], dtype=torch.long)
 y = torch.tensor(labels)
-y -= 1 
+# y -= 1 
 x = [convert_to_14_bit(val) for val in labels]
-data = Data(x=torch.Tensor(x), edge_index=edges, y=y)
+data = Data(x=torch.Tensor(x), edge_index=edges, y=y, num_classes=num_classes)
 print("Done Prepping data")
 
 nodesize = y.shape[0]
@@ -66,7 +55,7 @@ mask_split = []
 
 print("Creating train and test masks")
 
-with open('mask_split.pkl', 'rb') as f:
+with open('deepfammask_split.pkl', 'rb') as f:
     mask_split = pickle.load(f)
     mask_split = np.asarray(mask_split)
     data.train_mask = mask_split == 1
@@ -77,16 +66,38 @@ data.test_mask = torch.from_numpy(data.test_mask)
 print(data.train_mask)
 print(data.test_mask)
 
-
+print("Creating NeighborSampler for training nodes")
 sample_loader = NeighborSampler(
     data.edge_index, node_idx=data.train_mask, sizes=[25, 10], 
-    batch_size=1024, shuffle=True, num_workers=12
+    num_nodes=len(data.y), batch_size=512, shuffle=True, num_workers=12
 )
 
+print("Creating NeighborSampler all nodes")
 subgraph_loader = NeighborSampler(
     data.edge_index, node_idx=None, sizes=[-1],
-    batch_size=1024, shuffle=False, num_workers=12
+    num_nodes=len(data.y), batch_size=512, shuffle=False, num_workers=12
 )
+
+with open('deepfam_pyg_data_obj.pkl', 'wb') as f:
+    torch.save(data, f)
+
+with open('deepfam_pyg_train_sample_loader.pkl', 'wb') as f:
+    torch.save(sample_loader, f)
+
+with open('deepfam_pyg_complete_sample_loader.pkl', 'wb') as f:
+    torch.save(subgraph_loader, f)
+
+data = None
+with open('deepfam_pyg_data_obj.pkl', 'rb') as f:
+    data = torch.load(f)
+
+sample_loader = None 
+with open('deepfam_pyg_train_sample_loader.pkl', 'rb') as f:
+    sample_loader = torch.load(f)
+
+subgraph_loader = None
+with open('deepfam_pyg_complete_sample_loader.pkl', 'rb') as f:
+    subgraph_loader = torch.load(f)
 
 class Net(torch.nn.Module):
     def __init__(self, in_channels, out_channels, concat=False):
@@ -129,20 +140,22 @@ class Net(torch.nn.Module):
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 in_bits = 14
-model = Net(in_bits,num_classes).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+model = Net(in_bits,data.num_classes).to(device)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 def train(epoch):
     model.train()
 
     total_loss = total_correct = 0
-    for batch_size, n_id, adjs in sample_loader:
+    for ix, sample in enumerate(sample_loader):
+        batch_size, n_id, adjs = sample
+        # print("batch {} of {}".format(ix, len(sample_loader)))
         # `adjs` holds a list of `(edge_index, e_id, size)` tuples.
         adjs = [adj.to(device) for adj in adjs]
 
         optimizer.zero_grad()
         out = model(data.x[n_id].to(device), adjs)
-        loss = F.nll_loss(out, y[n_id[:batch_size]].to(device))
+        loss = F.nll_loss(out, data.y[n_id[:batch_size]].to(device))
         loss.backward()
         optimizer.step()
 
@@ -173,7 +186,7 @@ def test():
 
     return results
 
-for epoch in range(1, 5):
+for epoch in range(1, 11):
     loss, acc = train(epoch)
     print(f'Epoch {epoch:02d}, Loss: {loss:.4f}, Approx. Train: {acc:.4f}')
     train_acc, test_acc = test()
