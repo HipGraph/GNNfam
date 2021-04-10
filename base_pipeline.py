@@ -12,12 +12,7 @@ import numpy as np
 np.random.seed(42)
 torch.manual_seed(42)
 
-parser = argparse.ArgumentParser()
-parser.parse_args()
-
-
 def full_pipeline(args):
-    
     startpt = []
     endpt = []
     eweights = []
@@ -95,7 +90,7 @@ def full_pipeline(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     in_bits = 14
     model = Net(in_bits,num_classes).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     data = data.to(device)
 
     def train():
@@ -117,7 +112,7 @@ def full_pipeline(args):
         correct += pred[data.test_mask].eq(data.y[data.test_mask]).sum().item()
         return correct / data.test_mask.sum().item()
 
-    for epoch in range(1, 401):
+    for epoch in range(1, args.epochs+1):
         
         loss = train()
         test_acc = test()
@@ -131,17 +126,26 @@ def full_pipeline(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--graph", required=True, help="path to graph file", type=str)
-    parser.add_argument(
-        "--labels", required=True, help="path to labels file", type=str
+        '-g', '--graph', required=True, help='path to graph file', type=str
     )
     parser.add_argument(
-        "--mask", required=True, help="path to mask pickle file", type=str
+        '-l', '--labels', required=True, help='path to labels file', type=str
     )
     parser.add_argument(
-        "--one_indexed_classes", required=False,
-        help="to use when labels are 1 indexed instead of 0", 
+        '-m', '--mask', required=True, help='path to mask pickle file', type=str
+    )
+    parser.add_argument(
+        '-o', '--one_indexed_classes', required=False,
+        help='to use when labels are 1 indexed instead of 0', 
         dest='one_indexed_classes', action='store_true'
+    )
+    parser.add_argument(
+        '-e', '--epochs', required=False,
+        help='Number of training epochs', default=400, type=int
+    )
+    parser.add_argument(
+        '-lr', '--learning_rate', required=False,
+        help='Learning Rate for trining', default=0.1, type=float
     )
     parser.set_defaults(one_indexed_classes=False)
 
