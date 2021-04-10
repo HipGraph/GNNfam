@@ -90,7 +90,7 @@ def full_pipeline(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     in_bits = 14
     model = Net(in_bits,num_classes).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     data = data.to(device)
 
     def train():
