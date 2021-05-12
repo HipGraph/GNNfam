@@ -45,7 +45,7 @@ python base_pipeline.py --graph Graph.txt --labels label.txt --mask mask_split.p
 
 ### Generating sparsified graphs from protien sequence fasta files.
 
-![Pipeline Image](pipeline.pdf "GNNFam Pipeline")
+![Pipeline Image](pipeline.jpg "GNNFam Pipeline")
 
 To start with first step, we will need a fasta file which will look similar to example.fasta file in examples folder.
 
