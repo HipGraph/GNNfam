@@ -34,10 +34,6 @@ with open("deepfamlabel.txt", "r") as f:
 print("Done reading")
 num_classes = len(set(labels))
 
-nodesize = y.shape[0]
-trainsize = int(0.8*nodesize)
-testsize = nodesize - trainsize
-
 def convert_to_14_bit(num):
     return list(map(int, list('{0:014b}'.format(num))))
 
