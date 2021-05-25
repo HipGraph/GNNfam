@@ -45,7 +45,7 @@ python base_pipeline.py --graph Graph.txt --labels label.txt --mask mask_split.p
 
 ### Generating sparsified graphs from protien sequence fasta files.
 
-![Pipeline Image](pipeline.pdf "GNNFam Pipeline")
+![Pipeline Image](pipeline.jpg "GNNFam Pipeline")
 
 To start with first step, we will need a fasta file which will look similar to example.fasta file in examples folder.
 
@@ -60,6 +60,8 @@ After running the first command we run
 ```
 lastal -m 100 -pBLOSUM62 -P 0 -f blasttab lastDB example.fasta
 ```
+
+The output of above command needs to be processed to remove unnessary data and get the aligment information equivalent to how [Graph.txt](#graphtxt) should look like (mentioned above) 
 
 This will complete step one and give us sequence alignments which look like the input of step 2 shown in the pipeline image.
 
