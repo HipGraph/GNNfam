@@ -47,73 +47,11 @@ python base_pipeline.py --graph Graph.txt --labels label.txt --mask mask_split.p
 
 ![Pipeline Image](pipeline.jpg "GNNFam Pipeline")
 
-To start with first step, we will need a fasta file which will look similar to example.fasta file in examples folder.
+We have added a shell script in example folder for easy creation of graphs from a fasta file of sequences. All you need is last-align software and networkx python library installed.
 
-To create db against which the sequences will be matched with run the following command
+This run.sh file will create graphs for you using three different strategies mentioned in our paper. It will also generate a python pickle file named `name_to_ix_map.pkl`. This file can be used to create labels.txt file with integer mappings of each sequence.  This integer mapping is required to just easy the downstreaming process of classification.
 
-```lastdb -p -C 2 lastDB example.fasta```
+Once this is done, we can use the commands mentioned above to run the `base_pipeline.py` file on appropriate graph, train-test mask and label file to get the results!
 
-This will create multiple files which last-align software uses.
 
-After running the first command we run
-
-```
-lastal -m 100 -pBLOSUM62 -P 0 -f blasttab lastDB example.fasta
-```
-
-The output of above command needs to be processed to remove unnessary data and get the aligment information equivalent to how [Graph.txt](#graphtxt) should look like (mentioned above) 
-
-This will complete step one and give us sequence alignments which look like the input of step 2 shown in the pipeline image.
-
-Once we have the sequence alignment information, we will need to create a graph input file that looks similar to Graph.txt and similarly a labels.txt file for label information.  
-I.e we will need to create a mapping from sequence names to a unique integer for each sequenece. 
-
-Once we have this we can induce sparsity if needed with help of following sample code
-
-```
-#---------------------strategy 1 example code-----------------------
-#sorted_edges contains all the edges sorted in descending order based on the edge weight from the original graph.txt file
-
-#graph will be the networkx graph which will be sparsified with strategy 1 
-for step in range(10, 101, 10):
-    graph = nx.Graph()
-    for e in sorted_edges[:int(len(sorted_edges)*step/100)]:
-        graph.add_edge(e[0], e[1])
-    print("Doing {} of {} edges".format(len(sorted_edges)*10/100, len(sorted_edges)))
-    for ix in range(len(labels)):
-        graph.add_edge(ix, ix)
-
-#---------------------strategy 2 example code-----------------------
-#basegraph is the networkx graph generated from the original graph.txt file
-#gnew will be the networkx graph which will be sparsified with strategy 2
-for stepval in range(10, 101, 10):
-    step = stepval/100
-
-    gnew = nx.Graph()
-    for node in basegraph.nodes():
-        edges = [(k,v['weight']) for k,v in sorted(basegraph[node].items(), reverse=True, key=lambda item:item[1]['weight'])]
-        keepedges = edges[:int(len(edges)*step)]
-        for edge in keepedges:
-            gnew.add_edge(node, edge[0], weight=edge[1])
-        gnew.add_edge(node,node,weight=1)
-    print("Doing k: {}".format(step))
-    print("Edges:", len(gnew.edges()), "Nodes:", len(gnew.nodes()))
-
-#---------------------strategy 3 example code-----------------------
-#basegraph is the networkx graph generated from the original graph.txt file
-#gnew will be the networkx graph which will be sparsified with strategy 3 
-karray = [17, 185, 213, 550, 698, 804]
-for keepval in karray:
-    gnew = nx.Graph()
-    for node in basegraph.nodes():
-        edges = [(k,v['weight']) for k,v in sorted(basegraph[node].items(), reverse=True, key=lambda item:item[1]['weight'])]
-        keepedges = edges[:keepval]
-        for edge in keepedges:
-            gnew.add_edge(node, edge[0], weight=1)
-        gnew.add_edge(node,node,weight=1)
-    print("Doing k: {}".format(keepval))
-    print("Edges:", len(gnew.edges()), "Nodes:", len(gnew.nodes()))
-```
-
-Once these new sparsified graphs are created you can either edit our pipeline to use these graphs as input or you could save these graphs into new files in similar way Graph.txt file and use our code as is from test_full_pipeline.py  
 
