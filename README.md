@@ -76,7 +76,6 @@ Once we have this we can induce sparsity if needed with help of following sample
 
 #graph will be the networkx graph which will be sparsified with strategy 1 
 for step in range(10, 101, 10):
-    name = runname.format(step)
     graph = nx.Graph()
     for e in sorted_edges[:int(len(sorted_edges)*step/100)]:
         graph.add_edge(e[0], e[1])
@@ -88,7 +87,6 @@ for step in range(10, 101, 10):
 #basegraph is the networkx graph generated from the original graph.txt file
 #gnew will be the networkx graph which will be sparsified with strategy 2
 for stepval in range(10, 101, 10):
-    name = runname.format(stepval)
     step = stepval/100
 
     gnew = nx.Graph()
