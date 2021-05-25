@@ -55,3 +55,10 @@ Once this is done, we can use the commands mentioned above to run the `base_pipe
 
 
 
+### Requirements
+
+```
+torch==1.5.1
+torch-geometric==1.6.0
+networkx==2.4
+```
